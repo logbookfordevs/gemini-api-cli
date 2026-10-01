@@ -1,0 +1,57 @@
+# Gemini API CLI
+
+Local, dependency-free Node.js CLI for agent-controlled Gemini text-to-speech. Requires Node >=22.16. Calls Google's REST API; no SDK, server, or build step.
+
+## Setup
+
+`gemini-tts` is installed beside `jev` on this machine's PATH, pointing at `src/cli.js` in this checkout. Source edits take effect immediately. Agents must inherit that PATH.
+
+Set `GEMINI_API_KEY` in this checkout's ignored `.env` file (copy `.env.example` if missing), or export it in your shell. `GOOGLE_API_KEY` is also accepted. Existing environment variables take precedence. The checkout's `.env` loads from any working directory; unrelated projects' env files are never loaded. Use `--env-file /absolute/path/.env` to select another file. Do not give the key to agents in prompts.
+
+## Usage
+
+```sh
+gemini-tts --help
+gemini-tts schema --pretty
+gemini-tts voices
+gemini-tts tts --text 'Olá, Leonardo!' --style 'Warm Brazilian Portuguese' --voice Kore --out hello.wav
+gemini-tts tts --input script.txt --out narration.wav
+printf 'Hello!' | gemini-tts tts --out hello.wav
+gemini-tts tts --json-input examples/dialogue.json --out dialogue.wav
+gemini-tts tts --json-input - --out hello.wav <<'JSON'
+{"text":"Hello!","voice":"Puck","style":"Cheerful"}
+JSON
+gemini-tts tts --text 'Hello!' --dry-run --pretty
+```
+
+`--input` reads plain UTF-8 text; `--json-input` reads a structured job. Both accept `-` for stdin. No explicit source defaults to plain text stdin. Inputs are limited to 1 MiB locally; provider limits still apply. Keep longer scripts split into explicit jobs. The CLI makes one request per invocation.
+
+Single-speaker input is `{text, voice?, style?, model?}`. For dialogue use `{speakers: [{name, voice}, {name, voice}], turns: [{speaker, text, style?}], style?, model?}`. Exactly two distinct configured speakers are required; each turn references one by name. Per-turn style overrides shared style. `schema` prints JSON Schema; runtime additionally checks speaker references and unique names. Unknown fields fail.
+
+Transcript is verbatim text. Put delivery instructions in `style`, which goes into speech metadata separately. Voice names come from the documented prebuilt list; provider voice IDs are also accepted. `voices` returns a static prebuilt list, not your account's custom voices.
+
+Default model: `gemini-3.8-flash-tts`. Override with `--model`, input `model`, or `GEMINI_TTS_MODEL`, in that order. This CLI uses the Interactions TTS contract; older models using `generateContent` are not interchangeable. No silent model fallback.
+
+## Agent contract
+
+Success prints one JSON object to stdout with `schemaVersion: 1`, `ok: true`, `command: "tts"`, absolute `output`, `bytes`, `mimeType`, `model`, `durationMs`, and provider ID/usage when supplied. Audio is saved as a complete 24 kHz mono WAV, not printed to stdout. Dry runs return `endpoint` and `request`, do not require a key, and do not call the provider.
+
+Errors print `{schemaVersion:1,ok:false,error:{code,message,status?}}` to stderr, leaving stdout empty. Exit codes: 0 success; 2 invalid input/options/configuration or local file errors; 1 API/network/timeout/provider response errors. HTTP response bodies and keys are not echoed. Error codes include `MISSING_API_KEY`, `INVALID_INPUT`, `INVALID_JSON`, `INVALID_OPTIONS`, `CONFIG_ERROR`, `OUTPUT_EXISTS`, `FILE_ERROR`, `API_ERROR`, `NETWORK_ERROR`, `TIMEOUT`, and `INVALID_RESPONSE`.
+
+Generation requires `--out PATH.wav`; the parent directory must already exist. Existing files are protected unless `--force` is given. Timeout defaults to 120000 ms, adjustable with `--timeout-ms` up to 600000. No automatic retries: timeouts and connection failures may occur after billing. Calls use Google's service and may incur charges.
+
+Agent prompt:
+
+> Use `gemini-tts schema` to discover input. Generate speech with `gemini-tts tts --json-input /absolute/job.json --out /absolute/audio.wav`. Inspect exit status and the JSON result. Put speaking directions in `style`. Use `--dry-run` to validate before generation. Do not retry uncertain failures automatically or overwrite files without intent.
+
+## Development
+
+```sh
+npm run check
+```
+
+Behavioral tests mock HTTP and exercise CLI subprocesses; they make no paid requests. For a live check after configuring a key, run `gemini-tts tts --text 'Hello!' --out /tmp/gemini-tts-smoke.wav` and listen to the result.
+
+Installation is a symlink at `/Users/leonardo/Library/pnpm/bin/gemini-tts`. To remove the command, remove that symlink. Keep this checkout at its current path or reinstall the link after moving it.
+
+API contract and voice list: [Google's speech generation guide](https://ai.google.dev/gemini-api/docs/speech-generation). Implementation follows its non-streaming Interactions REST request and WAV response examples.

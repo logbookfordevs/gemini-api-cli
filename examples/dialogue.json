@@ -1,0 +1,8 @@
+{
+  "speakers": [{"name":"Host","voice":"Kore"},{"name":"Guest","voice":"Puck"}],
+  "style": "Warm, conversational Brazilian Portuguese",
+  "turns": [
+    {"speaker":"Host","text":"Olá! Como foi seu dia?"},
+    {"speaker":"Guest","text":"Foi ótimo. Vamos começar?","style":"Enthusiastic"}
+  ]
+}

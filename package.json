@@ -1,0 +1,9 @@
+{
+  "name": "gemini-api-cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": { "gemini-tts": "src/cli.js" },
+  "engines": { "node": ">=22.16" },
+  "scripts": { "test": "node --test", "check": "node --check src/cli.js && node --check src/tts.js && node --test" }
+}
