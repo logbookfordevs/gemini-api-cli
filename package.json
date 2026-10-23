@@ -1,9 +1,18 @@
 {
   "name": "gemini-api-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "bin": { "gemini-tts": "src/cli.js" },
-  "engines": { "node": ">=22.16" },
-  "scripts": { "test": "node --test", "check": "node --check src/cli.js && node --check src/tts.js && node --test" }
+  "bin": {
+    "gemini-api": "src/gemini-api.js",
+    "gemini-tts": "src/cli.js",
+    "gemini-music": "src/music-cli.js"
+  },
+  "engines": {
+    "node": ">=22.16"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "for f in src/*.js src/commands/*.js; do node --check \"$f\" || exit 1; done && node --test"
+  }
 }

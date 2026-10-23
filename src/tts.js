@@ -1,15 +1,8 @@
-export const DEFAULT_MODEL = 'gemini-3.8-flash-tts';
-export const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/interactions';
-export const VOICES = ['Zephyr', 'Puck', 'Charon', 'Kore', 'Fenrir', 'Leda', 'Orus', 'Aoede', 'Callirrhoe', 'Autonoe', 'Enceladus', 'Iapetus', 'Umbriel', 'Algieba', 'Despina', 'Erinome', 'Algenib', 'Rasalgethi', 'Laomedeia', 'Achernar', 'Alnilam', 'Schedar', 'Gacrux', 'Pulcherrima', 'Achird', 'Zubenelgenubi', 'Vindemiatrix', 'Sadachbia', 'Sadaltager', 'Sulafat'];
+import { CliError, ENDPOINT } from './common.js';
 
-export class CliError extends Error {
-  constructor(code, message, exitCode = 2, status) {
-    super(message);
-    this.code = code;
-    this.exitCode = exitCode;
-    this.status = status;
-  }
-}
+export { CliError, ENDPOINT } from './common.js';
+export const DEFAULT_MODEL = 'gemini-3.8-flash-tts';
+export const VOICES = ['Zephyr', 'Puck', 'Charon', 'Kore', 'Fenrir', 'Leda', 'Orus', 'Aoede', 'Callirrhoe', 'Autonoe', 'Enceladus', 'Iapetus', 'Umbriel', 'Algieba', 'Despina', 'Erinome', 'Algenib', 'Rasalgethi', 'Laomedeia', 'Achernar', 'Alnilam', 'Schedar', 'Gacrux', 'Pulcherrima', 'Achird', 'Zubenelgenubi', 'Vindemiatrix', 'Sadachbia', 'Sadaltager', 'Sulafat'];
 
 function text(value, name) {
   if (typeof value !== 'string' || !value.trim()) throw new CliError('INVALID_INPUT', `${name} must be a nonempty string`);

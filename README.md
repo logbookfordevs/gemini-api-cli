@@ -1,27 +1,28 @@
 # Gemini API CLI
 
-Local, dependency-free Node.js CLI for agent-controlled Gemini text-to-speech. Requires Node >=22.16. Calls Google's REST API; no SDK, server, or build step.
+Local, dependency-free Node.js CLI for agent-controlled Gemini media generation: `gemini-api tts` (speech) and `gemini-api music` (Lyria). Requires Node >=22.16. Calls Google's REST API; no SDK, server, or build step.
 
 ## Setup
 
-`gemini-tts` is installed beside `jev` on this machine's PATH, pointing at `src/cli.js` in this checkout. Source edits take effect immediately. Agents must inherit that PATH.
+`gemini-api` is installed beside `jev` on this machine's PATH, pointing at `src/gemini-api.js` in this checkout. `gemini-tts` and `gemini-music` remain as thin entry points that pin the command (`gemini-tts tts …`, `gemini-api music …`); prefer `gemini-api`. The binary is not named `gemini` to avoid clashing with Google's official Gemini CLI. Source edits take effect immediately. Agents must inherit that PATH.
 
 Set `GEMINI_API_KEY` in this checkout's ignored `.env` file (copy `.env.example` if missing), or export it in your shell. `GOOGLE_API_KEY` is also accepted. Existing environment variables take precedence. The checkout's `.env` loads from any working directory; unrelated projects' env files are never loaded. Use `--env-file /absolute/path/.env` to select another file. Do not give the key to agents in prompts.
 
 ## Usage
 
 ```sh
-gemini-tts --help
-gemini-tts schema --pretty
-gemini-tts voices
-gemini-tts tts --text 'Olá, Leonardo!' --style 'Warm Brazilian Portuguese' --voice Kore --out hello.wav
-gemini-tts tts --input script.txt --out narration.wav
-printf 'Hello!' | gemini-tts tts --out hello.wav
-gemini-tts tts --json-input examples/dialogue.json --out dialogue.wav
-gemini-tts tts --json-input - --out hello.wav <<'JSON'
+gemini-api --help
+gemini-api tts --help
+gemini-api schema tts --pretty
+gemini-api voices
+gemini-api tts --text 'Olá, Leonardo!' --style 'Warm Brazilian Portuguese' --voice Kore --out hello.wav
+gemini-api tts --input script.txt --out narration.wav
+printf 'Hello!' | gemini-api tts --out hello.wav
+gemini-api tts --json-input examples/dialogue.json --out dialogue.wav
+gemini-api tts --json-input - --out hello.wav <<'JSON'
 {"text":"Hello!","voice":"Puck","style":"Cheerful"}
 JSON
-gemini-tts tts --text 'Hello!' --dry-run --pretty
+gemini-api tts --text 'Hello!' --dry-run --pretty
 ```
 
 `--input` reads plain UTF-8 text; `--json-input` reads a structured job. Both accept `-` for stdin. No explicit source defaults to plain text stdin. Inputs are limited to 1 MiB locally; provider limits still apply. Keep longer scripts split into explicit jobs. The CLI makes one request per invocation.
@@ -42,7 +43,26 @@ Generation requires `--out PATH.wav`; the parent directory must already exist. E
 
 Agent prompt:
 
-> Use `gemini-tts schema` to discover input. Generate speech with `gemini-tts tts --json-input /absolute/job.json --out /absolute/audio.wav`. Inspect exit status and the JSON result. Put speaking directions in `style`. Use `--dry-run` to validate before generation. Do not retry uncertain failures automatically or overwrite files without intent.
+> Use `gemini-api schema tts` to discover input. Generate speech with `gemini-api tts --json-input /absolute/job.json --out /absolute/audio.wav`. Inspect exit status and the JSON result. Put speaking directions in `style`. Use `--dry-run` to validate before generation. Do not retry uncertain failures automatically or overwrite files without intent.
+
+## Music (`gemini-api music`)
+
+Same checkout, key and conventions as `tts`, for Lyria music generation via the Interactions REST API.
+
+```sh
+gemini-api schema music --pretty
+gemini-api music --prompt 'Warm lo-fi beat, instrumental only, about 2 minutes' --out /abs/beat.mp3
+gemini-api music --input brief.txt --out /abs/song.mp3
+gemini-api music --json-input job.json --out /abs/song.wav
+gemini-api music --prompt 'Cinematic theme for this scene' --image scene.png --out /abs/theme.mp3
+gemini-api music --prompt 'Upbeat jingle' --dry-run --pretty
+```
+
+Job is `{prompt, model?, format?, images?: [paths]}`; `--image` is repeatable (up to 10 jpg/png/webp). The API has no duration, lyrics or instrumental fields: put them in the prompt (e.g. "2-minute song", `[Verse]`/`[Chorus]` lyric tags, "Instrumental only"). Default model `lyria-3.5` (the full-song model, informally "Pro"); `lyria-3-clip-preview` gives 30-second clips. Override with `--model`, input `model`, or `GEMINI_MUSIC_MODEL`.
+
+Output is MP3 by default (44.1 kHz stereo). `--format wav` or a `.wav` `--out` sends `response_format.mime_type: audio/wav`; Google's docs say WAV is possible but do not show the exact value, so treat WAV as unverified until a live call succeeds. `--out` extension must match the format. Success JSON matches `tts` plus `lyrics` (text the model returned alongside the audio, when present). Timeout defaults to 300000 ms. One request, no retries; generation is billed and non-deterministic.
+
+Layout: `src/gemini-api.js` dispatches to `src/commands/{tts,music}.js`; `src/common.js` holds shared input, env, output and error handling; `src/tts.js` and `src/music.js` hold request building and response decoding. A new endpoint is one command module plus one `COMMANDS` entry.
 
 ## Development
 
@@ -50,8 +70,8 @@ Agent prompt:
 npm run check
 ```
 
-Behavioral tests mock HTTP and exercise CLI subprocesses; they make no paid requests. For a live check after configuring a key, run `gemini-tts tts --text 'Hello!' --out /tmp/gemini-tts-smoke.wav` and listen to the result.
+Behavioral tests mock HTTP and exercise CLI subprocesses; they make no paid requests. For a live check after configuring a key, run `gemini-api tts --text 'Hello!' --out /tmp/gemini-tts-smoke.wav` and listen to the result.
 
-Installation is a symlink at `/Users/leonardo/Library/pnpm/bin/gemini-tts`. To remove the command, remove that symlink. Keep this checkout at its current path or reinstall the link after moving it.
+Installation is symlinks in `/Users/leonardo/Library/pnpm/bin/` (`gemini-api`, plus `gemini-tts` and `gemini-music`). To remove a command, remove its symlink. Keep this checkout at its current path or reinstall the link after moving it.
 
 API contract and voice list: [Google's speech generation guide](https://ai.google.dev/gemini-api/docs/speech-generation). Implementation follows its non-streaming Interactions REST request and WAV response examples.
