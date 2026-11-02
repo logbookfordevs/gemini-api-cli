@@ -1,6 +1,13 @@
 {
   "name": "gemini-api-cli",
   "version": "0.2.0",
+  "description": "Local Gemini API CLI for agent-controlled speech (TTS) and music (Lyria) generation",
+  "license": "MIT",
+  "author": "Leonardo R. Dias",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/logbookfordevs/gemini-api-cli.git"
+  },
   "private": true,
   "type": "module",
   "bin": {

@@ -2,9 +2,17 @@
 
 Local, dependency-free Node.js CLI for agent-controlled Gemini media generation: `gemini-api tts` (speech) and `gemini-api music` (Lyria). Requires Node >=22.16. Calls Google's REST API; no SDK, server, or build step.
 
+This is an unofficial project and is not affiliated with Google. Calls use your own API key and may incur charges.
+
 ## Setup
 
-`gemini-api` is installed beside `jev` on this machine's PATH, pointing at `src/gemini-api.js` in this checkout. `gemini-tts` and `gemini-music` remain as thin entry points that pin the command (`gemini-tts tts …`, `gemini-api music …`); prefer `gemini-api`. The binary is not named `gemini` to avoid clashing with Google's official Gemini CLI. Source edits take effect immediately. Agents must inherit that PATH.
+```sh
+git clone https://github.com/logbookfordevs/gemini-api-cli.git
+cd gemini-api-cli
+npm link
+```
+
+`npm link` puts `gemini-api` on your PATH, pointing at `src/gemini-api.js` in this checkout, so source edits take effect immediately. Keep the checkout at its current path or re-run `npm link` after moving it. Agents must inherit that PATH. `gemini-tts` and `gemini-music` remain as thin entry points that pin the command (`gemini-tts tts …`, `gemini-api music …`); prefer `gemini-api`. The binary is not named `gemini` to avoid clashing with Google's official Gemini CLI.
 
 Set `GEMINI_API_KEY` in this checkout's ignored `.env` file (copy `.env.example` if missing), or export it in your shell. `GOOGLE_API_KEY` is also accepted. Existing environment variables take precedence. The checkout's `.env` loads from any working directory; unrelated projects' env files are never loaded. Use `--env-file /absolute/path/.env` to select another file. Do not give the key to agents in prompts.
 
@@ -15,7 +23,7 @@ gemini-api --help
 gemini-api tts --help
 gemini-api schema tts --pretty
 gemini-api voices
-gemini-api tts --text 'Olá, Leonardo!' --style 'Warm Brazilian Portuguese' --voice Kore --out hello.wav
+gemini-api tts --text 'Olá, mundo!' --style 'Warm Brazilian Portuguese' --voice Kore --out hello.wav
 gemini-api tts --input script.txt --out narration.wav
 printf 'Hello!' | gemini-api tts --out hello.wav
 gemini-api tts --json-input examples/dialogue.json --out dialogue.wav
@@ -72,6 +80,10 @@ npm run check
 
 Behavioral tests mock HTTP and exercise CLI subprocesses; they make no paid requests. For a live check after configuring a key, run `gemini-api tts --text 'Hello!' --out /tmp/gemini-tts-smoke.wav` and listen to the result.
 
-Installation is symlinks in `/Users/leonardo/Library/pnpm/bin/` (`gemini-api`, plus `gemini-tts` and `gemini-music`). To remove a command, remove its symlink. Keep this checkout at its current path or reinstall the link after moving it.
+To remove the commands, run `npm unlink -g gemini-api-cli`.
+
+## License
+
+[MIT](LICENSE)
 
 API contract and voice list: [Google's speech generation guide](https://ai.google.dev/gemini-api/docs/speech-generation). Implementation follows its non-streaming Interactions REST request and WAV response examples.
